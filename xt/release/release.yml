@@ -1,0 +1,16 @@
+---
+pod_spelling_system:
+  # list of words that are spelled correctly
+  # (regardless of what spell check thinks)
+  stopwords:
+    - libbz2
+    - bzip
+    - FFI
+
+pod_coverage:
+  # format is "Class#method" or "Class", regex allowed
+  # for either Class or method.
+  private:
+    - Alien::bz2#libs
+    - Alien::bz2#cflags
+    - Alien::bz2#dll_path

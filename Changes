@@ -1,0 +1,13 @@
+Revision history for Alien-bz2
+
+0.04      2013-12-13 16:46:11 -0500
+  - First CPAN release
+
+0.03      2013-12-13 16:17:17 -0500
+  - MSWin32 install support (oops)
+
+0.02      2013-12-13 15:57:10 -0500
+  - MSWin32 support
+
+0.01      2013-12-06 08:46:49 -0500
+  - initial version
