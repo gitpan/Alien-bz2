@@ -30,7 +30,7 @@ my %module_build_args = (
     "Graham Ollis <plicease\@cpan.org>"
   ],
   "dist_name" => "Alien-bz2",
-  "dist_version" => "0.04",
+  "dist_version" => "0.05",
   "license" => "bsd",
   "module_name" => "Alien::bz2",
   "recommends" => {},
@@ -44,14 +44,14 @@ my %module_build_args = (
   },
   "script_files" => [],
   "test_requires" => {
-    "Test::CChecker" => 0,
+    "Test::CChecker" => "0.05",
     "Test::More" => 0
   }
 );
 
 
 my %fallback_build_requires = (
-  "Test::CChecker" => 0,
+  "Test::CChecker" => "0.05",
   "Test::More" => 0
 );
 

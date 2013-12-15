@@ -32,7 +32,7 @@
       },
       "test" : {
          "requires" : {
-            "Test::CChecker" : "0",
+            "Test::CChecker" : "0.05",
             "Test::More" : "0"
          }
       }
@@ -49,6 +49,6 @@
          "web" : "https://github.com/plicease/alien-bz2"
       }
    },
-   "version" : "0.04"
+   "version" : "0.05"
 }
 

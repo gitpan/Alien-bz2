@@ -1,5 +1,10 @@
 Revision history for Alien-bz2
 
+0.05      2013-12-15 07:58:34 -0500
+  - Testing tweaks and additional diagnostic
+  - MSWin32: Don't depend on po2dll, as that may not be in the PATH
+    (use a Perl wrapper around Alien::o2dll instead)
+
 0.04      2013-12-13 16:46:11 -0500
   - First CPAN release
 
