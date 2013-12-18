@@ -7,14 +7,14 @@ use Text::ParseWords qw( shellwords );
 use File::Spec;
 
 # ABSTRACT: Build and make available libbz2
-our $VERSION = '0.05'; # VERSION
+our $VERSION = '0.06'; # VERSION
 
 
 sub _dir
 {
   my($class,$dir) = @_;
   if($class->config('finished_installing'))
-  { $dir = File::Spec->catdir($class->dist_dir, 'include') }
+  { $dir = File::Spec->catdir($class->dist_dir, $dir) }
   else
   { $dir = File::Spec->catdir($class->dist_dir) }
   $dir =~ s/\\/\//g if $^O eq 'MSWin32';
@@ -59,7 +59,7 @@ Alien::bz2 - Build and make available libbz2
 
 =head1 VERSION
 
-version 0.05
+version 0.06
 
 =head1 SYNOPSIS
 

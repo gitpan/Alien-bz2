@@ -4,7 +4,7 @@
       "Graham Ollis <plicease@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.006, CPAN::Meta::Converter version 2.133380",
+   "generated_by" : "Dist::Zilla version 5.006, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "bsd"
    ],
@@ -49,6 +49,6 @@
          "web" : "https://github.com/plicease/alien-bz2"
       }
    },
-   "version" : "0.05"
+   "version" : "0.06"
 }
 

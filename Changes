@@ -1,5 +1,8 @@
 Revision history for Alien-bz2
 
+0.06      2013-12-18 07:48:16 -0500
+  - bugfix: was passing in include instead of lib dir to -L 
+
 0.05      2013-12-15 07:58:34 -0500
   - Testing tweaks and additional diagnostic
   - MSWin32: Don't depend on po2dll, as that may not be in the PATH
