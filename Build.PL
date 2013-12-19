@@ -30,13 +30,15 @@ my %module_build_args = (
     "Graham Ollis <plicease\@cpan.org>"
   ],
   "dist_name" => "Alien-bz2",
-  "dist_version" => "0.07",
+  "dist_version" => "0.08",
   "license" => "bsd",
   "module_name" => "Alien::bz2",
   "recommends" => {},
   "recursive_test_files" => 1,
   "requires" => {
     "Alien::Base" => "0.002",
+    "Capture::Tiny" => 0,
+    "ExtUtils::CChecker" => 0,
     "File::ShareDir" => "1.03",
     "File::Spec" => 0,
     "Text::ParseWords" => 0,

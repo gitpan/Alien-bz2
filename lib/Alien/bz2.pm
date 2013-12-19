@@ -7,22 +7,23 @@ use Text::ParseWords qw( shellwords );
 use File::Spec;
 
 # ABSTRACT: Build and make available libbz2
-our $VERSION = '0.07'; # VERSION
+our $VERSION = '0.08'; # VERSION
 
 
 sub _dir
 {
-  my($class,$dir) = @_;
+  my($class, $flag, $dir) = @_;
+  return () if $class->install_type('system');
   if($class->config('finished_installing'))
   { $dir = File::Spec->catdir($class->dist_dir, $dir) }
   else
   { $dir = File::Spec->catdir($class->dist_dir) }
   $dir =~ s/\\/\//g if $^O eq 'MSWin32';
-  $dir;
+  ("$flag$dir");
 }
 
-sub cflags { '-I' . _dir(shift, 'include') }
-sub libs { '-L' . _dir(shift, 'lib') . ' -lbz2' }
+sub cflags { join ' ', _dir(shift, -I => 'include')          }
+sub libs   { join ' ', _dir(shift, -L => 'lib'),    ' -lbz2' }
 
 # workaround for Alien::Base gh#30
 sub import
@@ -59,7 +60,7 @@ Alien::bz2 - Build and make available libbz2
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 SYNOPSIS
 
@@ -100,8 +101,26 @@ FFI
 =head1 DESCRIPTION
 
 This distribution installs the bzip2 libraries and makes them available L<Alien::Base> style.
+It will use the system version of libbz2 if found.  You can force it to build libbz2 from
+source by setting the environment variable C<ALIEN_BZ2> to C<share> when you install this
+module.
 
-Unless you have specific need for this, you probably want L<Compress::Bzip2>.
+Unless you have specific need for this, you probably are more interested in one of these:
+
+=over 4
+
+=item L<Compress::Bzip2>
+
+=item L<Compress::Raw::Bzip2>
+
+=item L<IO::Compress::Bzip2>
+
+=back
+
+=head1 CAVEATS
+
+Does not seem to work with 64bit Strawberry Perl on Windows.  This is because we borrow the
+sources from GnuWin32, which appear to be hand crafted to build 32bit binaries.
 
 =head1 BUNDLED SOFTWARE
 
