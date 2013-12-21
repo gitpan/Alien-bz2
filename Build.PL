@@ -30,7 +30,7 @@ my %module_build_args = (
     "Graham Ollis <plicease\@cpan.org>"
   ],
   "dist_name" => "Alien-bz2",
-  "dist_version" => "0.08",
+  "dist_version" => "0.09",
   "license" => "bsd",
   "module_name" => "Alien::bz2",
   "recommends" => {},

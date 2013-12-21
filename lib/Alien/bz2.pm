@@ -7,7 +7,7 @@ use Text::ParseWords qw( shellwords );
 use File::Spec;
 
 # ABSTRACT: Build and make available libbz2
-our $VERSION = '0.08'; # VERSION
+our $VERSION = '0.09'; # VERSION
 
 
 sub _dir
@@ -60,7 +60,7 @@ Alien::bz2 - Build and make available libbz2
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 
