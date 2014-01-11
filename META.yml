@@ -7,6 +7,7 @@ build_requires:
   Test::More: 0
 configure_requires:
   Alien::Base: 0.002
+  ExtUtils::CChecker: 0
   File::ShareDir: 1.03
   File::Which: 0
 dynamic_config: 0
@@ -19,7 +20,6 @@ name: Alien-bz2
 requires:
   Alien::Base: 0.002
   Capture::Tiny: 0
-  ExtUtils::CChecker: 0
   File::ShareDir: 1.03
   File::Spec: 0
   Text::ParseWords: 0
@@ -28,4 +28,4 @@ resources:
   bugtracker: https://github.com/plicease/alien-bz2/issues
   homepage: http://perl.wdlabs.com/Alien-bz2/
   repository: git://github.com/plicease/alien-bz2.git
-version: 0.10
+version: 0.11

@@ -17,6 +17,7 @@
       "configure" : {
          "requires" : {
             "Alien::Base" : "0.002",
+            "ExtUtils::CChecker" : "0",
             "File::ShareDir" : "1.03",
             "File::Which" : "0"
          }
@@ -25,7 +26,6 @@
          "requires" : {
             "Alien::Base" : "0.002",
             "Capture::Tiny" : "0",
-            "ExtUtils::CChecker" : "0",
             "File::ShareDir" : "1.03",
             "File::Spec" : "0",
             "Text::ParseWords" : "0",
@@ -51,6 +51,6 @@
          "web" : "https://github.com/plicease/alien-bz2"
       }
    },
-   "version" : "0.10"
+   "version" : "0.11"
 }
 

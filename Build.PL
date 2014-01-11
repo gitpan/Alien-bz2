@@ -4,14 +4,14 @@ use strict;
 use warnings;
 
 use Module::Build 0.3601;
-use lib qw{inc}; use Alien::bz2::ModuleBuild;
+use lib qw{inc}; use My::ModuleBuild;
 
 my %module_build_args = (
   "alien_build_commands" => [
-    "%x -I../../inc -MAlien::bz2::ModuleBuild -e alien_build   %s"
+    "%x -I../../inc -MMy::ModuleBuild -e alien_build   %s"
   ],
   "alien_install_commands" => [
-    "%x -I../../inc -MAlien::bz2::ModuleBuild -e alien_install %s"
+    "%x -I../../inc -MMy::ModuleBuild -e alien_install %s"
   ],
   "alien_name" => "bzip2",
   "alien_repository" => {
@@ -23,6 +23,7 @@ my %module_build_args = (
   "build_requires" => {},
   "configure_requires" => {
     "Alien::Base" => "0.002",
+    "ExtUtils::CChecker" => 0,
     "File::ShareDir" => "1.03",
     "File::Which" => 0
   },
@@ -31,7 +32,7 @@ my %module_build_args = (
     "Graham Ollis <plicease\@cpan.org>"
   ],
   "dist_name" => "Alien-bz2",
-  "dist_version" => "0.10",
+  "dist_version" => "0.11",
   "license" => "bsd",
   "module_name" => "Alien::bz2",
   "recommends" => {},
@@ -39,7 +40,6 @@ my %module_build_args = (
   "requires" => {
     "Alien::Base" => "0.002",
     "Capture::Tiny" => 0,
-    "ExtUtils::CChecker" => 0,
     "File::ShareDir" => "1.03",
     "File::Spec" => 0,
     "Text::ParseWords" => 0,
@@ -64,6 +64,6 @@ unless ( eval { Module::Build->VERSION(0.4004) } ) {
   $module_build_args{build_requires} = \%fallback_build_requires;
 }
 
-my $build = Alien::bz2::ModuleBuild->new(%module_build_args);
+my $build = My::ModuleBuild->new(%module_build_args);
 
 $build->create_build_script;

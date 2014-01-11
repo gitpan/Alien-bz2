@@ -1,19 +1,33 @@
-package Alien::bz2::ModuleBuild;
+package My::ModuleBuild;
 
 use strict;
 use warnings;
 use base qw( Alien::Base::ModuleBuild );
 use File::Spec;
+use ExtUtils::CChecker;
 
 sub new
 {
   my $class = shift;
   my %args = @_;
 
+  ExtUtils::CChecker->new->assert_compile_run(
+    diag => 'c compiler',
+    source => 'int main(int argc, char *argv[]) { return 0; }'
+  );
+
   if($^O eq 'MSWin32')
   {
     $args{requires}->{$_} = 0 for qw( Alien::MSYS Alien::o2dll );
     $args{alien_repository}->{location} = File::Spec->catdir(qw( src win ));
+    unless($class->alien_check_installed_version)
+    {
+      require Win32;
+      if(Win32::IsWinNT() && uc($ENV{PROCESSOR_ARCHITECTURE}) eq "AMD64")
+      {
+        die "64 bit Windows build from source not supported";
+      }
+    }
   }
   
   $class->SUPER::new(%args);
@@ -25,7 +39,6 @@ sub alien_check_installed_version
   
   return if ($ENV{ALIEN_BZ2}||'') eq 'share';
   
-  require ExtUtils::CChecker;
   require Capture::Tiny;
   
   my $cc = ExtUtils::CChecker->new;
@@ -46,7 +59,7 @@ sub alien_check_installed_version
   });
   
   return $1 if $ok && $out =~ /version = "(.*?)"/;
-  
+
   print "\n\n[out]\n$out\n\n";
   
   return;
