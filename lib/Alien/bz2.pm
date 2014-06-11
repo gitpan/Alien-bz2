@@ -2,49 +2,89 @@ package Alien::bz2;
 
 use strict;
 use warnings;
-use base qw( Alien::Base );
-use Text::ParseWords qw( shellwords );
+use File::ShareDir ();
 use File::Spec;
+use Alien::bz2::ConfigData;
+use constant _share_dir => File::ShareDir::dist_dir('Alien-bz2');
+use constant _alien_bz2012 => 1;
 
-# ABSTRACT: Build and make available libbz2
-our $VERSION = '0.11'; # VERSION
+# ABSTRACT: Build and make available bz2
+our $VERSION = '0.12'; # VERSION
 
+my $cf = 'Alien::bz2::ConfigData';
 
-sub _dir
-{
-  my($class, $flag, $dir) = @_;
-  return () if $class->install_type('system');
-  if($class->config('finished_installing'))
-  { $dir = File::Spec->catdir($class->dist_dir, $dir) }
-  else
-  { $dir = File::Spec->catdir($class->dist_dir) }
-  $dir =~ s/\\/\//g if $^O eq 'MSWin32';
-  ("$flag$dir");
+sub _catfile {
+  my $path = File::Spec->catfile(@_);
+  $path =~ s{\\}{/}g if $^O eq 'MSWin32';
+  $path;
 }
 
-sub cflags { join ' ', _dir(shift, -I => 'include')          }
-sub libs   { join ' ', _dir(shift, -L => 'lib'),    ' -lbz2' }
+sub _catdir {
+  my $path = File::Spec->catdir(@_);
+  $path =~ s{\\}{/}g if $^O eq 'MSWin32';
+  $path;
+}
 
-# workaround for Alien::Base gh#30
-sub import
+
+sub new
 {
-  my $class = shift;
-  
-  if($class->install_type('share'))
+  my($class) = @_;
+  bless {}, $class;
+}
+
+
+sub cflags
+{
+  my($class) = @_;
+  my @cflags = @{ $cf->config("cflags") };
+  unshift @cflags, '-I' . _catdir(_share_dir, 'bz2012', 'include' )
+    if $class->install_type eq 'share';
+  wantarray ? @cflags : "@cflags";
+}
+
+
+sub libs
+{
+  my($class) = @_;
+  my @libs = @{ $cf->config("libs") };
+  if($class->install_type eq 'share')
   {
-    unshift @DynaLoader::dl_library_path, 
-      grep { s/^-L// } 
-      shellwords( $class->libs );
+    if($cf->config('msvc'))
+    {
+      unshift @libs, '/libpath:' . _catdir(_share_dir, 'bz2012', 'lib');
+    }
+    else
+    {
+      unshift @libs, '-L' . _catdir(_share_dir, 'bz2012', 'lib');
+    }
   }
-  
-  # TODO: this puts bzip2 executables in the PATH on just Windows,
-  # which is undesirable.  Better to have a dll directory and
-  # copy the dlls there during the install process
-  $ENV{PATH} = $class->dist_dir . "\\bin;$ENV{PATH}" if $^O eq 'MSWin32';
-  $ENV{PATH} = $class->dist_dir . "/bin:$ENV{PATH}"  if $^O eq 'cygwin';
-  
-  $class->SUPER::import(@_);
+  wantarray ? @libs : "@libs";
 }
+
+
+sub dlls
+{
+  my($class) = @_;
+  my @list;
+  if($class->install_type eq 'system')
+  {
+    require Alien::bz2::Installer;
+    @list = Alien::bz2::Installer->system_install->dlls;
+  }
+  else
+  {
+    @list = map { _catfile(_share_dir, 'bz2012', 'dll', $_) }
+            @{ $cf->config("dlls") };
+  }
+  wantarray ? @list : $list[0];
+}
+
+
+sub install_type
+{
+  $cf->config("install_type");
+}
+
 
 1;
 
@@ -56,11 +96,11 @@ __END__
 
 =head1 NAME
 
-Alien::bz2 - Build and make available libbz2
+Alien::bz2 - Build and make available bz2
 
 =head1 VERSION
 
-version 0.11
+version 0.12
 
 =head1 SYNOPSIS
 
@@ -77,37 +117,86 @@ Build.PL
    ...
  );
  
- $build->create_build_script
+ $build->create_build_script;
 
 Makefile.PL
 
- use Alien::bz2
+ use Alien::bz2;
  use ExtUtils::MakeMaker;
  
- my $alien = Alien::bz2->new;
+ my $alien = Alien::bz2;
  WriteMakefile(
    ...
-   CFLAGS => Alien::bz2->cflags,
-   LIBS   => Alien::bz2->libs,
+   CFLAGS => $alien->cflags,
+   LIBS   => $alien->libs,
  );
 
-FFI
+FFI::Raw
 
  use Alien::bz2;
- use FFI::Sweet qw( ffi_lib );
+ use FFI::Raw;
  
- ffi_lib(Alien::bz2->new->libs);
+ my($dll) = Alien::bz2->new->dlls;
+ FFI::Raw->new($dll, 'BZ2_bzlibVersion', FFI::Raw::str);
+
+FFI::Sweet
+
+ use Alien::bz2;
+ use FFI::Sweet;
+ 
+ ffi_lib( Alien::bz2->new->dlls );
+ attach_function 'BZ2_bzlibVersion', [], _str;
 
 =head1 DESCRIPTION
 
-This distribution installs the bzip2 libraries and makes them available L<Alien::Base> style.
-It will use the system version of libbz2 if found.  You can force it to build libbz2 from
-source by setting the environment variable C<ALIEN_BZ2> to C<share> when you install this
-module.
+If you just want to compress or decompress bzip2 data in Perl you
+probably want one of L<Compress::Bzip2>, L<Compress::Raw::Bzip2>
+or L<IO::Compress::Bzip2>.
 
-Unless you have specific need for this, you probably are more interested in one of these:
+This distribution installs bz2 so that it can be used by other Perl
+distributions.  If already installed for your operating system, and it can
+be found, this distribution will use the bz2 that comes with your
+operating system, otherwise it will download it from the internet, build
+and install it.
+
+If you set the environment variable ALIEN_BZ2 to 'share', this
+distribution will ignore any system bz2 found, and build from
+source instead.  This may be desirable if your operating system comes
+with a very old version of bz2 and an upgrade path for the 
+system bz2 is not possible.
+
+=head1 METHODS
+
+=head2 cflags
+
+Returns the C compiler flags necessary to build against bz2.
+
+Returns flags as a list in list context and combined into a string in
+scalar context.
+
+=head2 libs
+
+Returns the library flags necessary to build against bz2.
+
+Returns flags as a list in list context and combined into a string in
+scalar context.
+
+=head2 dlls
+
+Returns a list of dynamic libraries (usually a list of just one library)
+that make up bz2.  This can be used for L<FFI::Raw>.
+
+Returns just the first dynamic library found in scalar context.
+
+=head2 install_type
+
+Returns the install type, one of either C<system> or C<share>.
+
+=head1 SEE ALSO
 
 =over 4
+
+=item L<Alien::bz2::Installer>
 
 =item L<Compress::Bzip2>
 
@@ -117,74 +206,15 @@ Unless you have specific need for this, you probably are more interested in one 
 
 =back
 
-=head1 CAVEATS
-
-Does not seem to work with 64bit Strawberry Perl on Windows.  This is because we borrow the
-sources from GnuWin32, which appear to be hand crafted to build 32bit binaries.
-
-=head1 BUNDLED SOFTWARE
-
-This distribution comes with bzip2, by Julian Seward with the
-following license:
-
- This program, "bzip2", the associated library "libbzip2", and all
- documentation, are copyright (C) 1996-2010 Julian R Seward.  All
- rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 
- 2. The origin of this software must not be misrepresented; you must 
-    not claim that you wrote the original software.  If you use this 
-    software in a product, an acknowledgment in the product 
-    documentation would be appreciated but is not required.
- 
- 3. Altered source versions must be plainly marked as such, and must
-    not be misrepresented as being the original software.
- 
- 4. The name of the author may not be used to endorse or promote 
-    products derived from this software without specific prior written 
-    permission.
- 
- THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
- OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- 
- Julian Seward, jseward@bzip.org
- bzip2/libbzip2 version 1.0.6 of 6 September 2010
-
-=head1 SEE ALSO
-
-=over 4
-
-=item L<Compress::Bzip2>
-
-=back
-
-=cut
-
 =head1 AUTHOR
 
 Graham Ollis <plicease@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2013 by Graham Ollis.
+This software is copyright (c) 2014 by Graham Ollis.
 
-This is free software, licensed under:
-
-  The (three-clause) BSD License
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut

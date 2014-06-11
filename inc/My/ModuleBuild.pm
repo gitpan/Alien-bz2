@@ -2,161 +2,124 @@ package My::ModuleBuild;
 
 use strict;
 use warnings;
-use base qw( Alien::Base::ModuleBuild );
+use base qw( Module::Build );
+use Config;
+use Alien::bz2::Installer;
 use File::Spec;
-use ExtUtils::CChecker;
+use FindBin ();
+
+my $type = eval { require FFI::Raw } ? 'both' : 'compile';
+
+# Note: for historical / hysterical reasons, the install type is one of:
+# 1. system, use the system bz2
+# 2. share, build your own bz2, both static and shared
+#    the static version will be used for XS modules and the shared one
+#    will be used for FFI modules.
+
+sub _catfile {
+  my $path = File::Spec->catfile(@_);
+  $path =~ s{\\}{/}g if $^O eq 'MSWin32';
+  $path;
+}
+
+sub _catdir {
+  my $path = File::Spec->catdir(@_);
+  $path =~ s{\\}{/}g if $^O eq 'MSWin32';
+  $path;
+}
 
 sub new
 {
-  my $class = shift;
-  my %args = @_;
+  my($class, %args) = @_;
 
-  ExtUtils::CChecker->new->assert_compile_run(
-    diag => 'c compiler',
-    source => 'int main(int argc, char *argv[]) { return 0; }'
-  );
+  my $system;
 
-  if($^O eq 'MSWin32')
+  unless(($ENV{ALIEN_BZ2} || 'system') eq 'share')
   {
-    $args{requires}->{$_} = 0 for qw( Alien::MSYS Alien::o2dll );
-    $args{alien_repository}->{location} = File::Spec->catdir(qw( src win ));
-    unless($class->alien_check_installed_version)
+    $system = eval {
+      Alien::bz2::Installer->system_install(
+        type  => $type,
+        alien => 0,
+      )
+    };
+  }
+
+  unless(defined $system)
+  {
+    my $prereqs = Alien::bz2::Installer->build_requires;  
+    while(my($mod,$ver) = each %$prereqs)
     {
-      require Win32;
-      if(Win32::IsWinNT() && uc($ENV{PROCESSOR_ARCHITECTURE}) eq "AMD64")
+      $args{build_requires}->{$mod} = $ver;
+    }
+  }
+
+  my $self = $class->SUPER::new(%args);
+
+  $self->config_data( name => 'bz2' );
+  $self->config_data( already_built => 0 );
+  $self->config_data( msvc => $^O eq 'MSWin32' && $Config{cc} =~ /cl(\.exe)?$/i ? 1 : 0 );
+  
+  $self->add_to_cleanup( '_alien', 'share/bz2012' );
+  
+  if(defined $system)
+  {
+    print "Found bz2 " . $system->version . " from system\n";
+    print "You can set ALIEN_BZ2=share to force building from source\n";
+    $self->config_data( install_type => 'system' );
+    $self->config_data( cflags       => $system->cflags );
+    $self->config_data( libs         => $system->libs );
+  }
+  else
+  {
+    print "Did not find working bz2, will download and install from the Internet\n";
+    $self->config_data( install_type => 'share' );
+  }
+  
+  $self;
+}
+
+sub ACTION_build
+{
+  my $self = shift;
+  
+  if($self->config_data('install_type') eq 'share')
+  {
+    unless($self->config_data('already_built'))
+    {
+      my $build_dir = _catdir($FindBin::Bin, '_alien');
+      mkdir $build_dir unless -d $build_dir;
+      my $prefix = _catdir($FindBin::Bin, 'share', 'bz2012' );
+      mkdir $prefix unless -d $prefix;
+      my $build = Alien::bz2::Installer->build_install( $prefix, dir => $build_dir );
+      $self->config_data( cflags => [grep !/^-I/, @{ $build->cflags }] );
+      $self->config_data( libs =>   [grep !/^-L/, @{ $build->libs }] );
+      if($self->config_data('msvc'))
       {
-        die "64 bit Windows build from source not supported";
+        $self->config_data( libs =>   [grep !/^(\/|-)libpath/i, @{ $build->libs }] );
       }
+
+      printf "cflags: %s\n", join ' ', @{ $self->config_data('cflags') };
+      printf "libs:   %s\n", join ' ', @{ $self->config_data('libs') };
+      printf "msvc:   %d\n", $self->config_data('msvc');
+      
+      do {
+        opendir my $dh, _catdir($prefix, 'dll');
+        my @list = grep { ! -l _catfile($prefix, 'dll', $_) }
+                   grep { /\.so/ || /\.(dll|dylib)$/ }
+                   grep !/^\./,
+                   sort
+                   readdir $dh;
+        closedir $dh;
+        print "dlls:\n";
+        print "  - $_\n" for @list;
+        $self->config_data( dlls => \@list );
+      };
+      
+      $self->config_data( already_built => 1 );
     }
   }
   
-  $class->SUPER::new(%args);
-}
-
-sub alien_check_installed_version
-{
-  my($self) = @_;
-  
-  return if ($ENV{ALIEN_BZ2}||'') eq 'share';
-  
-  require Capture::Tiny;
-  
-  my $cc = ExtUtils::CChecker->new;
-  $cc->push_extra_linker_flags('-lbz2');
-  
-  my $ok;
-  my $out = Capture::Tiny::capture_merged(sub {
-    $ok = $cc->try_compile_run(
-      join "\n", 
-        '#include <bzlib.h>',
-        'int main(int argc, char *argv[])',
-        '{',
-        '  printf("version = \"%s\"\n", BZ2_bzlibVersion());',
-        '  return 0;',
-        '}',
-        ''
-    );
-  });
-  
-  return $1 if $ok && $out =~ /version = "(.*?)"/;
-
-  print "\n\n[out]\n$out\n\n";
-  
-  return;
-}
-
-package
-  main;
-
-use Config;
-use File::Which qw( which );
-use File::Copy qw( copy );
-use File::Spec;
-use File::Path qw( mkpath );
-use FindBin ();
-use Env qw( @LD_LIBRARY_PATH );
-use Cwd qw( getcwd );
-
-my $make = which($Config{gmake}) || which($Config{make}) || 'make';
-my $cp   = which($Config{cp});
-
-sub _system
-{
-  print "% @_\n";
-  system @_;
-  die 'execute failed' if $?;
-}
-
-sub alien_build
-{
-  local $ENV{CC} = $Config{cc};
-  local $ENV{AR} = $Config{ar};
-
-  my $dir = shift @ARGV;
-
-  if($^O eq 'MSWin32')
-  {
-    do {
-      open my $fh, '<', 'Makefile';
-      my $makefile = do { local $/; <$fh> }; 
-      close $fh;
-      
-      $makefile =~ s/\to2dll/\t$^X -MAlien::o2dll=o2dll o2dll.pl/g;
-      
-      open $fh, '>', 'Makefile';
-      print $fh $makefile;
-      close $fh;
-      
-      open $fh, '>', 'o2dll.pl';
-      print $fh "use Alien::o2dll qw( o2dll );\n";
-      print $fh "o2dll(\@ARGV)\n";
-      close $fh;
-    };
-    
-    eval q{ require Alien::MSYS };
-    die $@ if $@;
-    Alien::MSYS::msys(sub {
-      _system 'make', 'all';
-    });
-    unlink 'libbz2.a';
-  }
-  else
-  {
-    push @LD_LIBRARY_PATH, getcwd(); # for OpenBSD
-    print "LD_LIBRARY_PATH = $ENV{LD_LIBRARY_PATH}\n";
-    _system $make, -f => 'Makefile-libbz2_so';
-    _system $make, 'all';
-  }
-}
-
-sub alien_install
-{
-  local $ENV{CC} = $Config{cc};
-  local $ENV{AR} = $Config{ar};
-
-  my $dir = shift @ARGV;
-  if($^O eq 'MSWin32')
-  {
-    eval q{ require Alien::MSYS };
-    die $@ if $@;
-    Alien::MSYS::msys(sub {
-      print "dir = $dir\n";
-      $dir =~ s/\\/\//g;
-      print "dir = $dir\n";
-      print "% make install PREFIX=$dir\n";
-      _system 'make', 'install', "PREFIX=$dir";
-      unlink(File::Spec->catfile($dir, 'lib', 'libbz2.a'));
-      copy('libbz2.dll.a', File::Spec->catfile($dir, 'lib', 'libbz2.dll.a'));
-    });
-  }
-  else
-  {
-    _system $make, 'install', "PREFIX=$dir";
-    eval {
-      _system $cp, '-a', 'libbz2.so.1.0.6', 'libbz2.so.1.0', "$dir/lib";
-      1;
-    } || _system $cp, '-p', 'libbz2.so.1.0.6', 'libbz2.so.1.0', "$dir/lib";
-  }
+  $self->SUPER::ACTION_build(@_);
 }
 
 1;

@@ -1,10 +1,10 @@
 NAME
 
-    Alien::bz2 - Build and make available libbz2
+    Alien::bz2 - Build and make available bz2
 
 VERSION
 
-    version 0.11
+    version 0.12
 
 SYNOPSIS
 
@@ -21,36 +21,84 @@ SYNOPSIS
        ...
      );
      
-     $build->create_build_script
+     $build->create_build_script;
 
     Makefile.PL
 
-     use Alien::bz2
+     use Alien::bz2;
      use ExtUtils::MakeMaker;
      
-     my $alien = Alien::bz2->new;
+     my $alien = Alien::bz2;
      WriteMakefile(
        ...
-       CFLAGS => Alien::bz2->cflags,
-       LIBS   => Alien::bz2->libs,
+       CFLAGS => $alien->cflags,
+       LIBS   => $alien->libs,
      );
 
-    FFI
+    FFI::Raw
 
      use Alien::bz2;
-     use FFI::Sweet qw( ffi_lib );
+     use FFI::Raw;
      
-     ffi_lib(Alien::bz2->new->libs);
+     my($dll) = Alien::bz2->new->dlls;
+     FFI::Raw->new($dll, 'BZ2_bzlibVersion', FFI::Raw::str);
+
+    FFI::Sweet
+
+     use Alien::bz2;
+     use FFI::Sweet;
+     
+     ffi_lib( Alien::bz2->new->dlls );
+     attach_function 'BZ2_bzlibVersion', [], _str;
 
 DESCRIPTION
 
-    This distribution installs the bzip2 libraries and makes them available
-    Alien::Base style. It will use the system version of libbz2 if found.
-    You can force it to build libbz2 from source by setting the environment
-    variable ALIEN_BZ2 to share when you install this module.
+    If you just want to compress or decompress bzip2 data in Perl you
+    probably want one of Compress::Bzip2, Compress::Raw::Bzip2 or
+    IO::Compress::Bzip2.
 
-    Unless you have specific need for this, you probably are more
-    interested in one of these:
+    This distribution installs bz2 so that it can be used by other Perl
+    distributions. If already installed for your operating system, and it
+    can be found, this distribution will use the bz2 that comes with your
+    operating system, otherwise it will download it from the internet,
+    build and install it.
+
+    If you set the environment variable ALIEN_BZ2 to 'share', this
+    distribution will ignore any system bz2 found, and build from source
+    instead. This may be desirable if your operating system comes with a
+    very old version of bz2 and an upgrade path for the system bz2 is not
+    possible.
+
+METHODS
+
+ cflags
+
+    Returns the C compiler flags necessary to build against bz2.
+
+    Returns flags as a list in list context and combined into a string in
+    scalar context.
+
+ libs
+
+    Returns the library flags necessary to build against bz2.
+
+    Returns flags as a list in list context and combined into a string in
+    scalar context.
+
+ dlls
+
+    Returns a list of dynamic libraries (usually a list of just one
+    library) that make up bz2. This can be used for FFI::Raw.
+
+    Returns just the first dynamic library found in scalar context.
+
+ install_type
+
+    Returns the install type, one of either system or share.
+
+SEE ALSO
+
+    Alien::bz2::Installer
 
     Compress::Bzip2
 
@@ -58,68 +106,14 @@ DESCRIPTION
 
     IO::Compress::Bzip2
 
-CAVEATS
-
-    Does not seem to work with 64bit Strawberry Perl on Windows. This is
-    because we borrow the sources from GnuWin32, which appear to be hand
-    crafted to build 32bit binaries.
-
-BUNDLED SOFTWARE
-
-    This distribution comes with bzip2, by Julian Seward with the following
-    license:
-
-     This program, "bzip2", the associated library "libbzip2", and all
-     documentation, are copyright (C) 1996-2010 Julian R Seward.  All
-     rights reserved.
-     
-     Redistribution and use in source and binary forms, with or without
-     modification, are permitted provided that the following conditions
-     are met:
-     
-     1. Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
-     
-     2. The origin of this software must not be misrepresented; you must 
-        not claim that you wrote the original software.  If you use this 
-        software in a product, an acknowledgment in the product 
-        documentation would be appreciated but is not required.
-     
-     3. Altered source versions must be plainly marked as such, and must
-        not be misrepresented as being the original software.
-     
-     4. The name of the author may not be used to endorse or promote 
-        products derived from this software without specific prior written 
-        permission.
-     
-     THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
-     OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-     ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-     DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-     DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-     GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-     INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-     WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-     NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-     
-     Julian Seward, jseward@bzip.org
-     bzip2/libbzip2 version 1.0.6 of 6 September 2010
-
-SEE ALSO
-
-    Compress::Bzip2
-
 AUTHOR
 
     Graham Ollis <plicease@cpan.org>
 
 COPYRIGHT AND LICENSE
 
-    This software is Copyright (c) 2013 by Graham Ollis.
+    This software is copyright (c) 2014 by Graham Ollis.
 
-    This is free software, licensed under:
-
-      The (three-clause) BSD License
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 

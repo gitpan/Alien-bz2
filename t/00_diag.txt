@@ -1,9 +1,4 @@
-Alien::Base
-Capture::Tiny
-ExtUtils::CChecker
+Alien::bz2::Installer
 File::ShareDir
-File::Spec
-File::Which
-Test::CChecker
+Module::Build
 Test::More
-Text::ParseWords

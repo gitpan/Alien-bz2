@@ -1,17 +1,25 @@
 ---
 pod_spelling_system:
+  skip: 0
   # list of words that are spelled correctly
   # (regardless of what spell check thinks)
   stopwords:
-    - libbz2
+    - bz
     - bzip
-    - FFI
-    - GnuWin
+    - cflags
+    - dlls
+    - libs
 
 pod_coverage:
+  skip: 0
   # format is "Class#method" or "Class", regex allowed
   # for either Class or method.
   private:
-    - Alien::bz2#libs
-    - Alien::bz2#cflags
-    - Alien::bz2#dll_path
+    - .*#new
+
+unused_vars:
+  skip: 0
+  global:
+    ignore_vars: []
+  module: {}
+
