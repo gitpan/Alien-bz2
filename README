@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    version 0.12
+    version 0.14
 
 SYNOPSIS
 
@@ -91,6 +91,10 @@ METHODS
     library) that make up bz2. This can be used for FFI::Raw.
 
     Returns just the first dynamic library found in scalar context.
+
+ version
+
+    Returns the version of bz2.
 
  install_type
 

@@ -9,7 +9,7 @@ use constant _share_dir => File::ShareDir::dist_dir('Alien-bz2');
 use constant _alien_bz2012 => 1;
 
 # ABSTRACT: Build and make available bz2
-our $VERSION = '0.12'; # VERSION
+our $VERSION = '0.14'; # VERSION
 
 my $cf = 'Alien::bz2::ConfigData';
 
@@ -69,7 +69,7 @@ sub dlls
   if($class->install_type eq 'system')
   {
     require Alien::bz2::Installer;
-    @list = Alien::bz2::Installer->system_install->dlls;
+    @list = Alien::bz2::Installer->system_install( type => 'ffi', alien => 0 )->dlls;
   }
   else
   {
@@ -77,6 +77,12 @@ sub dlls
             @{ $cf->config("dlls") };
   }
   wantarray ? @list : $list[0];
+}
+
+
+sub version
+{
+  $cf->config("version");
 }
 
 
@@ -100,7 +106,7 @@ Alien::bz2 - Build and make available bz2
 
 =head1 VERSION
 
-version 0.12
+version 0.14
 
 =head1 SYNOPSIS
 
@@ -187,6 +193,10 @@ Returns a list of dynamic libraries (usually a list of just one library)
 that make up bz2.  This can be used for L<FFI::Raw>.
 
 Returns just the first dynamic library found in scalar context.
+
+=head2 version
+
+Returns the version of bz2.
 
 =head2 install_type
 
